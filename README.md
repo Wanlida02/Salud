@@ -7,7 +7,7 @@ Aplicación web (PWA) para registrar el agua que bebes. Objetivo: 2 L al día.
 - Dentro de la app: botón grande **+ Medio vaso**, vaso (250) y botella (500), deshacer, borrar registros.
 - **Historial**: gráfico de 30 días, racha de días cumpliendo objetivo, media y lista por día.
 - **Sincronización** con una hoja de Google Sheets (funciona sin conexión y se sincroniza después).
-- **Recordatorios**: aviso en la app y correo si llevas 2 h sin beber entre las 9 y las 21 h.
+- **Notificaciones en el móvil**: si llevas 2 h sin beber (9–21 h) llega un aviso con el botón **+ Medio vaso**, que lo apunta sin abrir la app.
 
 ## 1. Publicar en GitHub Pages
 
@@ -39,13 +39,20 @@ Para actualizarla: `git push origin <rama>:gh-pages`.
 Los datos se guardan en la pestaña **Registro** de la hoja (`id, fecha_hora, dia, ml, borrado`).
 Si cambias el código del script, usa *Implementar → Gestionar implementaciones → Editar → Nueva versión* para mantener la misma URL.
 
-## 4. Recordatorios por correo (opcional)
+## 4. Notificaciones en el móvil
 
-En Apps Script, rellena `URL_APP` con la URL de GitHub Pages (para que el correo traiga el enlace directo)
-y ejecuta **`activarRecordatorios`**. Cada 30 min comprueba si llevas 2 h sin beber (9–21 h, zona horaria de la hoja)
-y, si no has llegado al objetivo, te envía un correo; como máximo uno cada 2 h. Para pararlo: `desactivarRecordatorios`.
+1. En Apps Script ejecuta **`activarRecordatorios`** (comprueba cada 30 min; avisa si llevas 2 h sin beber, de 9 a 21 h,
+   zona horaria de la hoja, y como máximo un aviso cada 2 h).
+2. En la app → *Ajustes → Notificaciones* → **Activar notificaciones** y acepta el permiso.
+3. Pulsa **Enviar prueba**: debe llegarte una notificación en unos segundos.
 
-Truco: crea en Gmail un filtro para el asunto «Hora de beber agua» con una etiqueta que tenga notificaciones activadas.
+- **Android**: la notificación trae los botones *+ Medio vaso* (lo apunta en la hoja sin abrir la app) y *Ver vaso*.
+- **iPhone (iOS 16.4+)**: hay que abrir la app desde el icono de la pantalla de inicio para activarlas. iOS no muestra
+  botones en la notificación: al tocarla se abre el vaso.
+
+Cómo funciona: Apps Script envía un *push* (Web Push con firma VAPID generada en `configurar`) al servicio de notificaciones
+del móvil; el service worker de la app consulta el total del día y muestra el aviso. Para parar: `desactivarRecordatorios`.
+Si cambias el código del script: *Implementar → Gestionar implementaciones → Editar → Versión: nueva* (la URL no cambia).
 
 ## Estructura
 
@@ -53,8 +60,8 @@ Truco: crea en Gmail un filtro para el asunto «Hora de beber agua» con una eti
 |---|---|
 | `index.html`, `styles.css`, `app.js` | La aplicación |
 | `manifest.webmanifest` | Icono, `start_url=?beber=1` y accesos directos al mantener pulsado |
-| `sw.js` | Funcionamiento sin conexión |
-| `apps-script/Code.gs` | Backend en Google Sheets + recordatorios |
+| `sw.js` | Funcionamiento sin conexión y notificaciones push |
+| `apps-script/Code.gs` | Backend en Google Sheets + envío de notificaciones |
 
 Parámetros de URL útiles (también para el futuro tablón personal):
 `?beber=1` suma medio vaso · `?ver=historial` abre el historial · `?ver=hoy` abre el vaso.

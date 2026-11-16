@@ -181,3 +181,6 @@ legend { font-weight: 700; padding: 0 6px; }
   border: 0; border-radius: 999px; padding: 6px 12px; background: color-mix(in srgb, var(--bg) 20%, transparent);
   color: var(--bg); font-weight: 700;
 }
+
+.notif-state { margin: 0; font-weight: 600; }
+.btn:disabled { opacity: .5; }

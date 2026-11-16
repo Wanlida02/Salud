@@ -104,6 +104,16 @@
           <button type="button" id="syncNow" class="btn">Sincronizar ahora</button>
         </div>
         <p id="cfgMsg" class="hint" aria-live="polite"></p>
+        <fieldset>
+          <legend>Notificaciones</legend>
+          <p class="hint">Aviso en el móvil si llevas 2 h sin beber (9–21 h), con botón «+ Medio vaso» para apuntarlo sin abrir la app.</p>
+          <p id="notifState" class="notif-state" aria-live="polite"></p>
+          <div class="row">
+            <button type="button" id="notifOn" class="btn primary">Activar notificaciones</button>
+            <button type="button" id="notifTest" class="btn">Enviar prueba</button>
+          </div>
+          <p id="notifIos" class="hint" hidden>En iPhone: primero añade la app a la pantalla de inicio (Compartir → Añadir a pantalla de inicio) y ábrela desde el icono.</p>
+        </fieldset>
         <div class="row">
           <button type="button" id="exportCsv" class="btn">Exportar CSV</button>
         </div>

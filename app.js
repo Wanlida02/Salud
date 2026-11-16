@@ -236,7 +236,7 @@ function show(v) {
   for (const k of Object.keys(TITLES)) $(`#view-${k}`).hidden = k !== view;
   document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
   $('#title').textContent = TITLES[view];
-  if (view === 'ajustes') fillForm();
+  if (view === 'ajustes') { fillForm(); renderNotif(); }
   render();
 }
 function render() {
@@ -309,6 +309,7 @@ function bind() {
       token: f.token.value.trim(),
     };
     store.set('hidra.cfg', cfg);
+    shareCfgWithSW();
     buildTicks();
     $('#cfgMsg').textContent = 'Guardado.';
     if (cfg.url) $('#cfgMsg').textContent = (await sync()) ? 'Guardado y sincronizado ✅' : 'Guardado, pero no se pudo sincronizar. Revisa la URL y la clave.';
@@ -332,6 +333,84 @@ function bind() {
   setInterval(render, 60 * 1000); // refresca recordatorio y cambio de día
 }
 
+/* ---------- Notificaciones push ---------- */
+// El service worker necesita la configuración para consultar el total y apuntar agua desde la notificación.
+async function shareCfgWithSW() {
+  try {
+    const c = await caches.open('hidra-cfg');
+    await c.put('cfg', new Response(JSON.stringify(cfg), { headers: { 'Content-Type': 'application/json' } }));
+  } catch {}
+}
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const b64uToBytes = (s) => {
+  const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
+  return Uint8Array.from(b, (c) => c.charCodeAt(0));
+};
+async function api(params, body) {
+  const sep = cfg.url.includes('?') ? '&' : '?';
+  const res = body
+    ? await fetch(cfg.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ token: cfg.token, ...body }) })
+    : await fetch(`${cfg.url}${sep}${new URLSearchParams({ ...params, token: cfg.token })}`);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Error del servidor');
+  return data;
+}
+async function currentSub() {
+  if (!pushSupported()) return null;
+  const reg = await navigator.serviceWorker.ready;
+  return reg.pushManager.getSubscription();
+}
+async function renderNotif(msg) {
+  const st = $('#notifState');
+  $('#notifIos').hidden = !(isIos && !navigator.standalone);
+  if (msg) { st.textContent = msg; return; }
+  if (!pushSupported()) {
+    st.textContent = isIos ? '⚠️ Abre la app desde el icono de la pantalla de inicio para poder activarlas.' : '⚠️ Este navegador no admite notificaciones push.';
+    $('#notifOn').disabled = $('#notifTest').disabled = true;
+    return;
+  }
+  const sub = await currentSub();
+  const perm = Notification.permission;
+  st.textContent = sub ? '✅ Activadas en este móvil.'
+    : perm === 'denied' ? '🚫 Bloqueadas: actívalas en los ajustes del navegador para este sitio.' : '🔕 Desactivadas.';
+  $('#notifOn').textContent = sub ? 'Desactivar notificaciones' : 'Activar notificaciones';
+  $('#notifTest').disabled = !sub;
+}
+async function toggleNotif() {
+  try {
+    if (!cfg.url || !cfg.token) return renderNotif('Primero configura la URL y la clave de Google Sheets y pulsa Guardar.');
+    const existing = await currentSub();
+    if (existing) {
+      await api(null, { action: 'unsubscribe', endpoint: existing.endpoint }).catch(() => {});
+      await existing.unsubscribe();
+      return renderNotif();
+    }
+    renderNotif('Pidiendo permiso…');
+    if ((await Notification.requestPermission()) !== 'granted') return renderNotif();
+    const { key } = await api({ action: 'vapid' });
+    if (!key) throw new Error('Falta la clave VAPID: ejecuta configurar() en Apps Script');
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToBytes(key) });
+    await api(null, { action: 'subscribe', sub: sub.toJSON() });
+    await shareCfgWithSW();
+    renderNotif();
+  } catch (err) {
+    renderNotif('❌ ' + (err.message || err));
+  }
+}
+async function testNotif() {
+  try {
+    renderNotif('Enviando…');
+    const { result } = await api(null, { action: 'test' });
+    const okCount = result.filter((r) => r.code >= 200 && r.code < 300).length;
+    renderNotif(okCount ? '📨 Enviada. Debería llegarte en unos segundos.' : '❌ El servicio push rechazó el envío: ' + JSON.stringify(result));
+    setTimeout(() => renderNotif(), 6000);
+  } catch (err) {
+    renderNotif('❌ ' + (err.message || err));
+  }
+}
+
 /* ---------- Inicio ---------- */
 buildTicks();
 bind();
@@ -339,4 +418,13 @@ setSync(cfg.url && cfg.token ? 'busy' : 'off');
 show('hoy');
 initLaunch();
 scheduleSync(300);
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+shareCfgWithSW();
+$('#notifOn').addEventListener('click', toggleNotif);
+$('#notifTest').addEventListener('click', testNotif);
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.addEventListener('message', (ev) => {
+    if (ev.data?.type === 'launch') handleLaunchUrl(ev.data.url);
+    if (ev.data?.type === 'sync') scheduleSync(100);
+  });
+}
