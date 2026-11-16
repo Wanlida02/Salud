@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hidratación</title>
+  <meta name="description" content="Registro diario de agua: medio vaso con un toque.">
+  <meta name="theme-color" content="#0b6bcb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d1b2a" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Beber">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <h1 id="title">Hoy</h1>
+    <button id="syncBadge" class="sync" type="button" title="Estado de sincronización" aria-live="polite"></button>
+  </header>
+
+  <main>
+    <!-- HOY -->
+    <section id="view-hoy" class="view" aria-labelledby="title">
+      <div class="glass-wrap">
+        <svg id="glass" viewBox="0 0 200 260" role="img" aria-label="Vaso de progreso">
+          <defs>
+            <clipPath id="glassClip">
+              <path d="M28 18 H172 L153 242 Q151 254 139 254 H61 Q49 254 47 242 Z"/>
+            </clipPath>
+          </defs>
+          <g clip-path="url(#glassClip)">
+            <rect x="0" y="0" width="200" height="260" class="glass-bg"/>
+            <g id="water" style="transform: translateY(254px)">
+              <g class="wave wave-back">
+                <path d="M0 8 Q25 0 50 8 T100 8 T150 8 T200 8 T250 8 T300 8 T350 8 T400 8 V300 H0 Z"/>
+              </g>
+              <g class="wave wave-front">
+                <path d="M0 8 Q25 16 50 8 T100 8 T150 8 T200 8 T250 8 T300 8 T350 8 T400 8 V300 H0 Z"/>
+              </g>
+            </g>
+          </g>
+          <g id="ticks" class="ticks"></g>
+          <path class="glass-outline" d="M28 18 H172 L153 242 Q151 254 139 254 H61 Q49 254 47 242 Z"/>
+          <path class="glass-shine" d="M44 34 L58 226"/>
+        </svg>
+        <div class="glass-label">
+          <div class="big"><span id="mlToday">0</span><small> ml</small></div>
+          <div id="pctToday" class="pct">0 %</div>
+        </div>
+      </div>
+
+      <p id="statusLine" class="status-line"></p>
+      <p id="reminder" class="reminder" hidden></p>
+
+      <button id="addBtn" class="add-btn" type="button">
+        <span class="plus">+</span> Medio vaso <span id="sipLabel" class="sip">125 ml</span>
+      </button>
+      <div class="quick">
+        <button type="button" class="chip" data-add="250">+ Vaso (250)</button>
+        <button type="button" class="chip" data-add="500">+ Botella (500)</button>
+      </div>
+
+      <h2 class="sub">Registros de hoy</h2>
+      <ul id="todayList" class="entries"></ul>
+    </section>
+
+    <!-- HISTORIAL -->
+    <section id="view-historial" class="view" hidden>
+      <div class="stats">
+        <div class="stat"><span id="stStreak">0</span><small>días seguidos</small></div>
+        <div class="stat"><span id="stAvg">0</span><small>ml de media (30 d)</small></div>
+        <div class="stat"><span id="stHit">0</span><small>objetivos (30 d)</small></div>
+      </div>
+      <h2 class="sub">Últimos 30 días</h2>
+      <div class="chart-wrap"><svg id="chart" role="img" aria-label="Agua por día, últimos 30 días"></svg></div>
+      <h2 class="sub">Por día</h2>
+      <ul id="dayList" class="days"></ul>
+    </section>
+
+    <!-- AJUSTES -->
+    <section id="view-ajustes" class="view" hidden>
+      <form id="cfgForm" class="form">
+        <label>Objetivo diario (ml)
+          <input name="goal" type="number" min="250" step="50" inputmode="numeric" required>
+        </label>
+        <label>Medio vaso (ml)
+          <input name="sip" type="number" min="25" step="5" inputmode="numeric" required>
+        </label>
+        <fieldset>
+          <legend>Sincronización con Google Sheets</legend>
+          <label>URL de la aplicación web de Apps Script
+            <input name="url" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+          </label>
+          <label>Clave secreta (TOKEN)
+            <input name="token" type="password" autocomplete="off">
+          </label>
+          <p class="hint">Instrucciones en el README del repositorio. Sin configurar, los datos se guardan solo en este móvil.</p>
+        </fieldset>
+        <div class="row">
+          <button type="submit" class="btn primary">Guardar</button>
+          <button type="button" id="syncNow" class="btn">Sincronizar ahora</button>
+        </div>
+        <p id="cfgMsg" class="hint" aria-live="polite"></p>
+        <div class="row">
+          <button type="button" id="exportCsv" class="btn">Exportar CSV</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="Secciones">
+    <button type="button" data-view="hoy" class="active">💧<span>Hoy</span></button>
+    <button type="button" data-view="historial">📅<span>Historial</span></button>
+    <button type="button" data-view="ajustes">⚙️<span>Ajustes</span></button>
+  </nav>
+
+  <div id="toast" class="toast" hidden>
+    <span id="toastMsg"></span>
+    <button type="button" id="toastUndo">Deshacer</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

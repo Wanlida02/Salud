@@ -1,0 +1,39 @@
+{
+  "name": "Hidratación",
+  "short_name": "Beber",
+  "description": "Toca para sumar medio vaso de agua. Mantén pulsado para ver el progreso y el historial.",
+  "id": "./",
+  "start_url": "./?beber=1",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b6bcb",
+  "theme_color": "#0b6bcb",
+  "lang": "es",
+  "launch_handler": { "client_mode": ["focus-existing", "auto"] },
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Progreso e historial",
+      "short_name": "Progreso",
+      "url": "./?ver=historial",
+      "icons": [{ "src": "icons/sc-historial.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Ver el vaso de hoy",
+      "short_name": "Hoy",
+      "url": "./?ver=hoy",
+      "icons": [{ "src": "icons/sc-hoy.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Beber medio vaso",
+      "short_name": "+ Medio vaso",
+      "url": "./?beber=1",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
