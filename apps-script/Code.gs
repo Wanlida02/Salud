@@ -17,7 +17,7 @@ const HORA_INICIO = 9;
 const HORA_FIN = 21;
 const DIAS_DEVUELTOS = 400;
 // Pon aquí la URL de GitHub Pages para que el correo incluya un enlace directo (opcional).
-const URL_APP = '';
+const URL_APP = 'https://wanlida02.github.io/Salud/';
 
 /* ---------- Configuración ---------- */
 function configurar() {

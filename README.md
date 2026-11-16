@@ -13,7 +13,7 @@ Aplicación web (PWA) para registrar el agua que bebes. Objetivo: 2 L al día.
 
 1. En GitHub: *Settings → Pages → Build and deployment → Deploy from a branch*.
 2. Elige la rama (`main` cuando la fusiones, o `claude/hydration-tracking-app-mccuby`) y carpeta `/ (root)`.
-3. La app quedará en `https://wanlida02.github.io/salud/`.
+3. La app quedará en `https://wanlida02.github.io/Salud/` (publicada desde la rama `gh-pages`).
 
 > Si el repositorio es privado, GitHub Pages necesita un plan de pago; con un repo público funciona gratis.
 > La URL y la clave de sincronización **no** están en el código: se introducen en *Ajustes* y se guardan solo en tu móvil.
