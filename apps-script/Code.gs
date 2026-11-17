@@ -219,55 +219,57 @@ function bytesAleatorios_(n) {
  * Apps Script no trae firma ES256, así que se implementa aquí (curva P-256, nonce RFC 6979).
  */
 const Vapid = (function () {
-  const P = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffffn;
-  const N = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
-  const GX = 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296n;
-  const GY = 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5n;
+  // Apps Script no admite literales BigInt (123n): se crean con BigInt().
+  const B0 = BigInt(0), B1 = BigInt(1), B2 = BigInt(2), B3 = BigInt(3), B4 = BigInt(4), B8 = BigInt(8), B255 = BigInt(255);
+  const P = BigInt('0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff');
+  const N = BigInt('0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551');
+  const GX = BigInt('0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296');
+  const GY = BigInt('0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5');
 
-  const mod = (a, m) => { const r = a % m; return r < 0n ? r + m : r; };
+  const mod = (a, m) => { const r = a % m; return r < B0 ? r + m : r; };
   function powmod(b, e, m) {
-    let r = 1n; b = mod(b, m);
-    while (e > 0n) { if (e & 1n) r = (r * b) % m; b = (b * b) % m; e >>= 1n; }
+    let r = B1; b = mod(b, m);
+    while (e > B0) { if (e & B1) r = (r * b) % m; b = (b * b) % m; e >>= B1; }
     return r;
   }
-  const inv = (a, m) => powmod(a, m - 2n, m);
+  const inv = (a, m) => powmod(a, m - B2, m);
 
   function dbl(p) {
     const [X, Y, Z] = p;
-    if (Z === 0n || Y === 0n) return [0n, 1n, 0n];
+    if (Z === B0 || Y === B0) return [B0, B1, B0];
     const delta = mod(Z * Z, P), gamma = mod(Y * Y, P), beta = mod(X * gamma, P);
-    const alpha = mod(3n * (X - delta) * (X + delta), P);
-    const X3 = mod(alpha * alpha - 8n * beta, P);
+    const alpha = mod(B3 * (X - delta) * (X + delta), P);
+    const X3 = mod(alpha * alpha - B8 * beta, P);
     const Z3 = mod((Y + Z) * (Y + Z) - gamma - delta, P);
-    const Y3 = mod(alpha * (4n * beta - X3) - 8n * gamma * gamma, P);
+    const Y3 = mod(alpha * (B4 * beta - X3) - B8 * gamma * gamma, P);
     return [X3, Y3, Z3];
   }
   function addAffine(p, x2, y2) {
     const [X1, Y1, Z1] = p;
-    if (Z1 === 0n) return [x2, y2, 1n];
+    if (Z1 === B0) return [x2, y2, B1];
     const Z1Z1 = mod(Z1 * Z1, P);
     const U2 = mod(x2 * Z1Z1, P), S2 = mod(y2 * Z1 * Z1Z1, P);
     const H = mod(U2 - X1, P), r = mod(S2 - Y1, P);
-    if (H === 0n) return r === 0n ? dbl(p) : [0n, 1n, 0n];
+    if (H === B0) return r === B0 ? dbl(p) : [B0, B1, B0];
     const HH = mod(H * H, P), HHH = mod(H * HH, P), V = mod(X1 * HH, P);
-    const X3 = mod(r * r - HHH - 2n * V, P);
+    const X3 = mod(r * r - HHH - B2 * V, P);
     const Y3 = mod(r * (V - X3) - Y1 * HHH, P);
     return [X3, Y3, mod(Z1 * H, P)];
   }
   function mulG(k) {
-    let R = [0n, 1n, 0n];
+    let R = [B0, B1, B0];
     for (let i = 255; i >= 0; i--) {
       R = dbl(R);
-      if ((k >> BigInt(i)) & 1n) R = addAffine(R, GX, GY);
+      if ((k >> BigInt(i)) & B1) R = addAffine(R, GX, GY);
     }
     const zi = inv(R[2], P), zi2 = mod(zi * zi, P);
     return [mod(R[0] * zi2, P), mod(R[1] * zi2 * zi, P)];
   }
 
-  const toBig = (bytes) => bytes.reduce((a, b) => (a << 8n) | BigInt(b & 255), 0n);
+  const toBig = (bytes) => bytes.reduce((a, b) => (a << B8) | BigInt(b & 255), B0);
   function toBytes(n, len) {
     const out = new Array(len);
-    for (let i = len - 1; i >= 0; i--) { out[i] = Number(n & 255n); n >>= 8n; }
+    for (let i = len - 1; i >= 0; i--) { out[i] = Number(n & B255); n >>= B8; }
     return out;
   }
   const signed = (arr) => arr.map((b) => (b > 127 ? b - 256 : b));
@@ -286,7 +288,7 @@ const Vapid = (function () {
     for (;;) {
       V = hmac(K, V);
       const k = toBig(V);
-      if (k >= 1n && k < N) return k;
+      if (k >= B1 && k < N) return k;
       K = hmac(K, V.concat([0])); V = hmac(K, V);
     }
   }
@@ -296,13 +298,13 @@ const Vapid = (function () {
       const k = nonce(d, toBytes(e, 32));
       const r = mod(mulG(k)[0], N);
       const s = mod(inv(k, N) * (e + r * d), N);
-      if (r !== 0n && s !== 0n) return toBytes(r, 32).concat(toBytes(s, 32));
+      if (r !== B0 && s !== B0) return toBytes(r, 32).concat(toBytes(s, 32));
     }
   }
 
   return {
     generar(randomBytes) {
-      const d = mod(toBig(randomBytes), N - 1n) + 1n;
+      const d = mod(toBig(randomBytes), N - B1) + B1;
       const [x, y] = mulG(d);
       return { d: b64u(toBytes(d, 32)), pub: b64u([4].concat(toBytes(x, 32), toBytes(y, 32))) };
     },
