@@ -149,9 +149,17 @@ function renderToday() {
   const h = new Date().getHours();
   const since = last ? Date.now() - last.getTime() : Infinity;
   const showRem = left > 0 && h >= REMIND_FROM && h < REMIND_TO && since >= REMIND_MS;
+  const now = new Date();
+  const frac = Math.min(1, Math.max(0, (now.getHours() + now.getMinutes() / 60 - REMIND_FROM) / (REMIND_TO - REMIND_FROM)));
+  const expected = Math.round((cfg.goal * frac) / 50) * 50;
+  const behind = left > 0 && h >= REMIND_FROM && expected - total >= 250;
   const rem = $('#reminder');
-  rem.hidden = !showRem;
-  if (showRem) {
+  rem.hidden = !(showRem || behind);
+  if (behind) {
+    const hoursLeft = Math.max(1, REMIND_TO - (now.getHours() + now.getMinutes() / 60));
+    const perHour = Math.max(1, Math.ceil(left / cfg.sip / hoursLeft));
+    rem.textContent = `⏳ Vas ${fmtMl(expected - total)} ml por detrás del ritmo · unos ${perHour} medios vasos/hora`;
+  } else if (showRem) {
     rem.textContent = last && since < 24 * 3600e3
       ? `⏰ Hace ${Math.floor(since / 3600e3)} h ${Math.floor((since % 3600e3) / 60e3)} min que no bebes`
       : '⏰ Aún no has bebido hoy';

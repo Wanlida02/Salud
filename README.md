@@ -63,6 +63,10 @@ Si cambias el código del script, usa *Implementar → Gestionar implementacione
 - **iPhone (iOS 16.4+)**: hay que abrir la app desde el icono de la pantalla de inicio para activarlas. iOS no muestra
   botones en la notificación: al tocarla se abre el vaso.
 
+**Aviso de ritmo**: el ideal es repartir los 2 L de 9 a 21 h (≈167 ml/h). En los controles de las **13, 16 y 19 h**,
+si vas un vaso (250 ml) o más por detrás, llega «⏳ Vas por detrás hoy» con cuántos medios vasos por hora necesitas
+para recuperar. Nunca llegan dos avisos con menos de 1 h de diferencia.
+
 Cómo funciona: Apps Script envía un *push* (Web Push con firma VAPID generada en `configurar`) al servicio de notificaciones
 del móvil; el service worker de la app consulta el total del día y muestra el aviso. Para parar: `desactivarRecordatorios`.
 Si cambias el código del script: *Implementar → Gestionar implementaciones → Editar → Versión: nueva* (la URL no cambia).

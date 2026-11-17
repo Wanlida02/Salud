@@ -1,5 +1,5 @@
 // Service worker: funcionamiento sin conexión + notificaciones push.
-const CACHE = 'hidra-v5';
+const CACHE = 'hidra-v6';
 const CFG_CACHE = 'hidra-cfg';
 const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/badge-96.png'];
 
@@ -47,6 +47,16 @@ async function todayTotal(cfg) {
   if (!data.ok) throw new Error(data.error);
   return data.total;
 }
+// Ritmo ideal: el objetivo repartido de forma lineal entre las 9 y las 21 h (igual que en Apps Script).
+const PACE_FROM = 9, PACE_TO = 21, PACE_MARGIN = 250;
+function pace(total, goal, sip, now = new Date()) {
+  const h = now.getHours() + now.getMinutes() / 60;
+  const frac = Math.min(1, Math.max(0, (h - PACE_FROM) / (PACE_TO - PACE_FROM)));
+  const expected = Math.round((goal * frac) / 50) * 50;
+  const hoursLeft = Math.max(1, PACE_TO - h);
+  const halvesPerHour = Math.max(1, Math.ceil(Math.max(0, goal - total) / sip / hoursLeft));
+  return { expected, behind: total < goal && expected - total >= PACE_MARGIN, deficit: expected - total, halvesPerHour };
+}
 const NOTIF_BASE = { icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', tag: 'hidra', lang: 'es' };
 const ACTIONS = [{ action: 'beber', title: '+ Medio vaso' }, { action: 'ver', title: 'Ver vaso' }];
 
@@ -55,15 +65,23 @@ self.addEventListener('push', (e) => {
   e.waitUntil((async () => {
     const cfg = await getCfg();
     const goal = cfg?.goal || 2000, sip = cfg?.sip || 125;
+    let title = '💧 Hora de beber agua';
     let body = `Hace un rato que no bebes: apunta medio vaso (${sip} ml).`;
     try {
       if (cfg?.url) {
         const total = await todayTotal(cfg);
         const left = Math.max(0, goal - total);
-        body = `Llevas ${fmt(total)} de ${fmt(goal)} ml. Te faltan unos ${Math.ceil(left / sip)} medios vasos.`;
+        const p = pace(total, goal, sip);
+        if (p.behind) {
+          title = '⏳ Vas por detrás hoy';
+          body = `Llevas ${fmt(total)} ml; a esta hora lo ideal serían ${fmt(p.expected)}. ` +
+            `Para llegar a ${fmt(goal)} ml: unos ${p.halvesPerHour} medios vasos por hora hasta las ${PACE_TO} h.`;
+        } else {
+          body = `Llevas ${fmt(total)} de ${fmt(goal)} ml. Te faltan unos ${Math.ceil(left / sip)} medios vasos.`;
+        }
       }
     } catch {}
-    await self.registration.showNotification('💧 Hora de beber agua', {
+    await self.registration.showNotification(title, {
       ...NOTIF_BASE, body, renotify: true, requireInteraction: false, actions: ACTIONS, data: { kind: 'reminder' },
     });
   })());

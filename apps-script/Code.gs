@@ -124,17 +124,38 @@ function beberRapido_(ml) {
 
 /* ================= Recordatorio (push) ================= */
 function recordatorio() {
+  // Aviso de ritmo: el ideal es repartir el objetivo de forma lineal entre HORA_INICIO y HORA_FIN.
+  // En cada control (13, 16 y 19 h), si vas al menos un vaso (250 ml) por detrás, se envía un aviso.
+  const CONTROLES_RITMO = [13, 16, 19];
+  const MARGEN_RITMO_ML = 250;
+
   const tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
   const ahora = new Date();
-  const hora = Number(Utilities.formatDate(ahora, tz, 'H'));
+  const hora = Number(Utilities.formatDate(ahora, tz, 'H')) + Number(Utilities.formatDate(ahora, tz, 'm')) / 60;
   if (hora < HORA_INICIO || hora >= HORA_FIN) return;
 
+  const hoy = hoyStr_();
   const regs = listar_();
-  if (totalDia_(regs, hoyStr_()) >= OBJETIVO_ML) return;
+  const total = totalDia_(regs, hoy);
+  if (total >= OBJETIVO_ML) return;
 
-  const ultimo = regs.length ? new Date(regs[regs.length - 1].ts).getTime() : 0;
   const props = PropertiesService.getScriptProperties();
   const ultimoAviso = Number(props.getProperty('ULTIMO_AVISO') || 0);
+
+  // 1) ¿Vamos por detrás del ritmo en el último control alcanzado? (como mucho 1 aviso por hora)
+  const esperado = OBJETIVO_ML * (hora - HORA_INICIO) / (HORA_FIN - HORA_INICIO);
+  const control = CONTROLES_RITMO.filter((h) => hora >= h).pop();
+  const clave = hoy + '|' + control;
+  if (control && esperado - total >= MARGEN_RITMO_ML && props.getProperty('RITMO') !== clave &&
+      ahora - ultimoAviso >= 55 * 60 * 1000) {
+    enviarPushATodos_(); // el móvil calcula el mismo ritmo y muestra el aviso «Vas por detrás»
+    props.setProperty('RITMO', clave);
+    props.setProperty('ULTIMO_AVISO', String(ahora.getTime()));
+    return;
+  }
+
+  // 2) Recordatorio normal: 2 h sin beber
+  const ultimo = regs.length ? new Date(regs[regs.length - 1].ts).getTime() : 0;
   const umbral = RECORDATORIO_HORAS * 3600 * 1000 - 5 * 60 * 1000; // margen de 5 min por el disparador
   if (ahora - ultimo < umbral || ahora - ultimoAviso < umbral) return;
 
