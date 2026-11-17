@@ -1,5 +1,5 @@
 // Service worker: funcionamiento sin conexión + notificaciones push.
-const CACHE = 'hidra-v2';
+const CACHE = 'hidra-v3';
 const CFG_CACHE = 'hidra-cfg';
 const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/badge-96.png'];
 

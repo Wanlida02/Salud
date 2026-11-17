@@ -5,7 +5,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-const DEFAULTS = { goal: 2000, sip: 125, url: '', token: '' };
+const DEFAULTS = { goal: 2000, sip: 125, url: '', token: '', autoClose: true };
 const REMIND_MS = 2 * 60 * 60 * 1000; // 2 h
 const REMIND_FROM = 9, REMIND_TO = 21;
 
@@ -226,6 +226,7 @@ function renderHistory() {
 function fillForm() {
   const f = $('#cfgForm');
   for (const k of ['goal', 'sip', 'url', 'token']) f.elements[k].value = cfg[k];
+  f.elements.autoClose.checked = cfg.autoClose !== false;
 }
 
 /* ---------- Navegación ---------- */
@@ -261,7 +262,44 @@ function handleLaunchUrl(href) {
   const u = new URL(href, location.href);
   const v = u.searchParams.get('ver');
   if (v) show(v);
-  else if (u.searchParams.has('beber')) { show('hoy'); add(); }
+  else if (u.searchParams.has('beber')) quickAdd();
+}
+
+/* ---------- Toque en el icono: apuntar y cerrar ---------- */
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let quickRunning = false;
+async function quickAdd() {
+  show('hoy');
+  add();
+  if (!cfg.autoClose || !isStandalone() || quickRunning) return;
+  quickRunning = true;
+  const ov = $('#quick'), st = $('#quickStatus');
+  const total = totalsByDay()[todayKey()] || 0;
+  $('#quickMl').textContent = `+${cfg.sip} ml`;
+  $('#quickTotal').textContent = `${fmtMl(total)} de ${fmtMl(cfg.goal)} ml hoy`;
+  st.textContent = cfg.url ? 'Guardando…' : '';
+  ov.hidden = false;
+  $('#toast').hidden = true;
+  let cancelled = false;
+  const cancel = () => { cancelled = true; ov.hidden = true; };
+  ov.addEventListener('pointerdown', cancel, { once: true });
+
+  // Espera a que se guarde en la hoja (máx. 5 s) para que los recordatorios lo sepan
+  if (cfg.url && cfg.token) {
+    clearTimeout(syncTimer);
+    const t0 = Date.now();
+    while (queue.length && Date.now() - t0 < 5000 && !cancelled) {
+      if (!syncing) { if (!(await sync())) await sleep(500); } else await sleep(150);
+    }
+    st.textContent = queue.length ? 'Guardado en el móvil (se sincronizará luego)' : '✓ Guardado';
+  }
+  await sleep(900);
+  quickRunning = false;
+  if (cancelled) return;
+  window.close();
+  await sleep(500);
+  ov.hidden = true; // si el sistema no permite cerrar, se queda la app abierta
 }
 function initLaunch() {
   const initialHref = location.href;
@@ -307,6 +345,7 @@ function bind() {
       sip: Math.max(25, Number(f.sip.value) || DEFAULTS.sip),
       url: f.url.value.trim(),
       token: f.token.value.trim(),
+      autoClose: f.autoClose.checked,
     };
     store.set('hidra.cfg', cfg);
     shareCfgWithSW();

@@ -2,7 +2,7 @@
 
 Aplicación web (PWA) para registrar el agua que bebes. Objetivo: 2 L al día.
 
-- **Tocar el icono "Beber"** → suma medio vaso (125 ml) y muestra el vaso llenándose.
+- **Tocar el icono "Beber"** → apunta medio vaso (125 ml), lo guarda y la app se cierra sola en ~2 s (toca la pantalla para dejarla abierta; se puede desactivar en *Ajustes*).
 - **Mantener pulsado el icono** (Android) → accesos *Progreso e historial*, *Ver el vaso de hoy*, *Beber medio vaso*.
 - Dentro de la app: botón grande **+ Medio vaso**, vaso (250) y botella (500), deshacer, borrar registros.
 - **Historial**: gráfico de 30 días, racha de días cumpliendo objetivo, media y lista por día.

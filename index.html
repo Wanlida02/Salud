@@ -89,6 +89,7 @@
         <label>Medio vaso (ml)
           <input name="sip" type="number" min="25" step="5" inputmode="numeric" required>
         </label>
+        <label class="check"><input name="autoClose" type="checkbox"> Al tocar el icono, apuntar medio vaso y cerrar la app</label>
         <fieldset>
           <legend>Sincronización con Google Sheets</legend>
           <label>URL de la aplicación web de Apps Script
@@ -126,6 +127,16 @@
     <button type="button" data-view="historial">📅<span>Historial</span></button>
     <button type="button" data-view="ajustes">⚙️<span>Ajustes</span></button>
   </nav>
+
+  <div id="quick" class="quick-ov" hidden role="status">
+    <div class="quick-card">
+      <div class="quick-drop">💧</div>
+      <div id="quickMl" class="quick-ml"></div>
+      <div id="quickTotal" class="quick-total"></div>
+      <div id="quickStatus" class="quick-status"></div>
+      <div class="quick-hint">Toca la pantalla para mantener la app abierta</div>
+    </div>
+  </div>
 
   <div id="toast" class="toast" hidden>
     <span id="toastMsg"></span>
