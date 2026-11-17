@@ -274,33 +274,54 @@ async function quickAdd() {
   add();
   if (!cfg.autoClose || !isStandalone() || quickRunning) return;
   quickRunning = true;
-  const ov = $('#quick'), st = $('#quickStatus');
+  const ov = $('#quick');
   const total = totalsByDay()[todayKey()] || 0;
   $('#quickMl').textContent = `+${cfg.sip} ml`;
   $('#quickTotal').textContent = `${fmtMl(total)} de ${fmtMl(cfg.goal)} ml hoy`;
-  st.textContent = cfg.url ? 'Guardando…' : '';
+  $('#quickExit').hidden = true;
   ov.hidden = false;
   $('#toast').hidden = true;
   let cancelled = false;
-  const cancel = () => { cancelled = true; ov.hidden = true; };
-  ov.addEventListener('pointerdown', cancel, { once: true });
+  ov.addEventListener('pointerdown', (ev) => {
+    if (ev.target.closest('#quickExit')) return;
+    cancelled = true; ov.hidden = true;
+  }, { once: true });
 
-  // Espera a que se guarde en la hoja (máx. 5 s) para que los recordatorios lo sepan
-  if (cfg.url && cfg.token) {
-    clearTimeout(syncTimer);
-    const t0 = Date.now();
-    while (queue.length && Date.now() - t0 < 5000 && !cancelled) {
-      if (!syncing) { if (!(await sync())) await sleep(500); } else await sleep(150);
-    }
-    st.textContent = queue.length ? 'Guardado en el móvil (se sincronizará luego)' : '✓ Guardado';
-  }
-  await sleep(900);
+  // El guardado lo termina el service worker aunque la app ya no esté en pantalla
+  // (el servidor ignora duplicados por id, así que la sincronización normal no repite nada).
+  clearTimeout(syncTimer);
+  sync();
+  handOffToSW();
+
+  await sleep(700);
   quickRunning = false;
   if (cancelled) return;
-  window.close();
-  await sleep(500);
-  ov.hidden = true; // si el sistema no permite cerrar, se queda la app abierta
+  if (!(await leaveApp())) $('#quickExit').hidden = false; // el sistema no dejó salir solo: botón «Salir»
 }
+
+async function handOffToSW() {
+  try {
+    const reg = await navigator.serviceWorker?.ready;
+    const ops = queue.filter((o) => o.type === 'add');
+    if (reg?.active && ops.length && cfg.url) reg.active.postMessage({ type: 'save', ops });
+  } catch {}
+}
+
+// Android no deja cerrar una app web instalada con window.close(); en su lugar se manda al usuario
+// a la pantalla de inicio (acción HOME de Android), lo que deja la app en segundo plano.
+const HOME_INTENT = 'intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.HOME;launchFlags=0x10000000;end';
+async function leaveApp() {
+  try { window.close(); } catch {}
+  await sleep(150);
+  if (document.visibilityState === 'hidden') return true;
+  if (/android/i.test(navigator.userAgent)) {
+    location.href = HOME_INTENT;
+    await sleep(600);
+    if (document.visibilityState === 'hidden') return true;
+  }
+  return false;
+}
+
 function initLaunch() {
   const initialHref = location.href;
   const hasParams = location.search.length > 1;
@@ -366,7 +387,7 @@ function bind() {
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { render(); scheduleSync(200); }
+    if (document.visibilityState === 'visible') { $('#quick').hidden = true; render(); scheduleSync(200); }
   });
   window.addEventListener('online', () => scheduleSync(200));
   setInterval(render, 60 * 1000); // refresca recordatorio y cambio de día
@@ -459,6 +480,9 @@ initLaunch();
 scheduleSync(300);
 shareCfgWithSW();
 $('#notifOn').addEventListener('click', toggleNotif);
+$('#quickExit').addEventListener('click', async () => {
+  if (!(await leaveApp())) { $('#quick').hidden = true; toast('Android no permite salir automáticamente: usa el botón de inicio.'); }
+});
 $('#notifTest').addEventListener('click', testNotif);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});

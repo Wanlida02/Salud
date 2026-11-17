@@ -1,5 +1,5 @@
 // Service worker: funcionamiento sin conexión + notificaciones push.
-const CACHE = 'hidra-v3';
+const CACHE = 'hidra-v4';
 const CFG_CACHE = 'hidra-cfg';
 const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/badge-96.png'];
 
@@ -112,4 +112,24 @@ self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   if (e.action === 'beber') e.waitUntil(addFromNotification());
   else e.waitUntil(openApp('./?ver=hoy'));
+});
+
+/* ---------- Guardado delegado (la app se va a segundo plano justo después) ---------- */
+self.addEventListener('message', (e) => {
+  if (e.data?.type !== 'save') return;
+  e.waitUntil((async () => {
+    const cfg = await getCfg();
+    if (!cfg?.url || !cfg?.token) return;
+    for (let i = 0; i < 3; i++) {
+      try {
+        const res = await withTimeout(fetch(cfg.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ token: cfg.token, ops: e.data.ops }),
+        }), 15000);
+        if ((await res.json()).ok) return;
+      } catch {}
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  })());
 });
