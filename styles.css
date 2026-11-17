@@ -182,6 +182,7 @@ legend { font-weight: 700; padding: 0 6px; }
   color: var(--bg); font-weight: 700;
 }
 
+.shortcut-url { display: block; font-size: .75rem; word-break: break-all; background: var(--glass); border-radius: 8px; padding: 8px; color: var(--muted); }
 .notif-state { margin: 0; font-weight: 600; }
 .btn:disabled { opacity: .5; }
 
@@ -202,3 +203,4 @@ legend { font-weight: 700; padding: 0 6px; }
 .quick-exit { margin-top: 14px; padding: 12px 36px; font-size: 1.05rem; }
 .quick-hint { color: var(--muted); font-size: .78rem; margin-top: 14px; }
 @keyframes pop { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.form label[hidden] { display: none; }

@@ -106,8 +106,15 @@
         </div>
         <p id="cfgMsg" class="hint" aria-live="polite"></p>
         <fieldset>
+          <legend>Botón «Beber» sin abrir la app</legend>
+          <p class="hint"><strong>iPhone:</strong> app Atajos → <em>+</em> → acción «Obtener contenido de URL» con este enlace → acción «Mostrar notificación» con el «Contenido de la URL» → nómbralo «Beber» → <em>Compartir → Añadir a pantalla de inicio</em>. También puedes asignarlo al doble toque en la parte trasera (Ajustes → Accesibilidad → Tocar → Tocar atrás) o pedírselo a Siri.</p>
+          <code id="shortcutUrl" class="shortcut-url"></code>
+          <div class="row"><button type="button" id="copyShortcut" class="btn primary">Copiar enlace para Atajos</button></div>
+          <p class="hint">El enlace incluye tu clave: no lo compartas.</p>
+        </fieldset>
+        <fieldset>
           <legend>Notificaciones</legend>
-          <p class="hint">Aviso en el móvil si llevas 2 h sin beber (9–21 h), con botón «+ Medio vaso» para apuntarlo sin abrir la app.</p>
+          <p class="hint">Aviso en el móvil si llevas 2 h sin beber (9–21 h), al tocarlo se abre el vaso (en Android trae además el botón «+ Medio vaso»).</p>
           <p id="notifState" class="notif-state" aria-live="polite"></p>
           <div class="row">
             <button type="button" id="notifOn" class="btn primary">Activar notificaciones</button>

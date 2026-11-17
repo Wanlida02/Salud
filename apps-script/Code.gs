@@ -56,6 +56,7 @@ function doGet(e) {
   if (!tokenOk_(p.token)) return json_({ ok: false, error: 'Clave incorrecta' });
   if (p.action === 'vapid') return json_({ ok: true, key: PropertiesService.getScriptProperties().getProperty('VAPID_PUB') });
   if (p.action === 'hoy') return json_({ ok: true, total: totalDia_(listar_(), p.date || hoyStr_()), goal: OBJETIVO_ML });
+  if (p.action === 'beber') return beberRapido_(Number(p.ml) || MEDIO_VASO_ML);
   return json_({ ok: true, entries: listar_() });
 }
 
@@ -106,6 +107,21 @@ function aplicarOps_(ops) {
   }
 }
 
+/**
+ * Para el atajo «Beber» de iPhone (app Atajos) o HTTP Shortcuts en Android:
+ * GET …/exec?action=beber&token=XXX → apunta medio vaso y devuelve un texto corto para el aviso.
+ */
+function beberRapido_(ml) {
+  const ahora = new Date();
+  const entry = { id: 'a' + Utilities.getUuid().replace(/-/g, '').slice(0, 12), ts: ahora.toISOString(), date: hoyStr_(), ml };
+  aplicarOps_([{ type: 'add', entry }]);
+  const total = totalDia_(listar_(), entry.date);
+  const texto = total >= OBJETIVO_ML
+    ? `🎉 +${ml} ml · ¡Objetivo cumplido! ${total} ml hoy`
+    : `💧 +${ml} ml · Llevas ${total} de ${OBJETIVO_ML} ml`;
+  return ContentService.createTextOutput(texto).setMimeType(ContentService.MimeType.TEXT);
+}
+
 /* ================= Recordatorio (push) ================= */
 function recordatorio() {
   const tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
@@ -139,7 +155,7 @@ function enviarPushATodos_() {
   const caducadas = [];
   subs.forEach((s) => {
     const aud = s.endpoint.match(/^https:\/\/[^/]+/)[0];
-    const jwt = Vapid.jwt(d, { aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: URL_APP });
+    const jwt = Vapid.jwt(d, { aud, exp: Math.floor(Date.now() / 1000) + 3600, sub: URL_APP });
     const res = UrlFetchApp.fetch(s.endpoint, {
       method: 'post',
       headers: { TTL: '3600', Urgency: 'high', Authorization: 'vapid t=' + jwt + ', k=' + pub },

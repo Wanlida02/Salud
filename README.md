@@ -24,6 +24,19 @@ Para actualizarla: `git push origin <rama>:gh-pages`.
 - **iPhone (Safari)**: Compartir → *Añadir a pantalla de inicio*. iOS no muestra los accesos al mantener pulsado;
   usa las pestañas *Hoy / Historial* dentro de la app.
 
+## iPhone: botón «Beber» que no abre la app
+
+En iOS una app web siempre se abre al tocar su icono, así que el toque rápido se hace con la app **Atajos**:
+
+1. En la app de Hidratación → *Ajustes* → **Copiar enlace para Atajos** (lleva tu clave: no lo compartas).
+2. App **Atajos** → **+** → *Añadir acción* → **Obtener contenido de URL** → pega el enlace.
+3. *Añadir acción* → **Mostrar notificación** → como texto, la variable *Contenido de la URL*.
+4. Nómbralo **Beber**, elige icono 💧 → *Compartir* → **Añadir a pantalla de inicio**.
+
+Al tocarlo se apunta medio vaso y aparece un aviso «💧 +125 ml · Llevas 875 de 2000 ml», sin abrir nada.
+Extras: *Ajustes → Accesibilidad → Tocar → Tocar atrás → Doble toque → Beber*, el botón de Acción, un widget de Atajos o «Oye Siri, Beber».
+El icono de la app web (Hidratación) queda para ver el vaso y el historial.
+
 ## 3. Sincronización con Google Sheets (≈5 min)
 
 1. Crea una hoja nueva en [sheets.new](https://sheets.new) (p. ej. «Hidratación»).

@@ -1,5 +1,5 @@
 // Service worker: funcionamiento sin conexión + notificaciones push.
-const CACHE = 'hidra-v4';
+const CACHE = 'hidra-v5';
 const CFG_CACHE = 'hidra-cfg';
 const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/badge-96.png'];
 
@@ -55,7 +55,7 @@ self.addEventListener('push', (e) => {
   e.waitUntil((async () => {
     const cfg = await getCfg();
     const goal = cfg?.goal || 2000, sip = cfg?.sip || 125;
-    let body = `Toca «+ Medio vaso» para apuntar ${sip} ml.`;
+    let body = `Hace un rato que no bebes: apunta medio vaso (${sip} ml).`;
     try {
       if (cfg?.url) {
         const total = await todayTotal(cfg);

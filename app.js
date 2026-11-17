@@ -1,6 +1,7 @@
 'use strict';
 
 /* ---------- Almacenamiento local ---------- */
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -227,6 +228,10 @@ function fillForm() {
   const f = $('#cfgForm');
   for (const k of ['goal', 'sip', 'url', 'token']) f.elements[k].value = cfg[k];
   f.elements.autoClose.checked = cfg.autoClose !== false;
+  f.elements.autoClose.closest('label').hidden = isIos;
+  const link = shortcutUrl();
+  $('#shortcutUrl').textContent = link ? link.replace(/token=[^&]+/, 'token=••••') : 'Configura primero la URL y la clave.';
+  $('#copyShortcut').disabled = !link;
 }
 
 /* ---------- Navegación ---------- */
@@ -263,6 +268,7 @@ function handleLaunchUrl(href) {
   const v = u.searchParams.get('ver');
   if (v) show(v);
   else if (u.searchParams.has('beber')) quickAdd();
+  else if (u.searchParams.has('app')) { if (isIos) show('hoy'); else quickAdd(); } // icono: en iPhone solo abre
 }
 
 /* ---------- Toque en el icono: apuntar y cerrar ---------- */
@@ -272,7 +278,7 @@ let quickRunning = false;
 async function quickAdd() {
   show('hoy');
   add();
-  if (!cfg.autoClose || !isStandalone() || quickRunning) return;
+  if (isIos || !cfg.autoClose || !isStandalone() || quickRunning) return; // iOS no deja salir: solo apunta
   quickRunning = true;
   const ov = $('#quick');
   const total = totalsByDay()[todayKey()] || 0;
@@ -401,12 +407,16 @@ async function shareCfgWithSW() {
     await c.put('cfg', new Response(JSON.stringify(cfg), { headers: { 'Content-Type': 'application/json' } }));
   } catch {}
 }
-const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const b64uToBytes = (s) => {
   const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
   return Uint8Array.from(b, (c) => c.charCodeAt(0));
 };
+function shortcutUrl() {
+  if (!cfg.url || !cfg.token) return '';
+  const sep = cfg.url.includes('?') ? '&' : '?';
+  return `${cfg.url}${sep}action=beber&ml=${cfg.sip}&token=${encodeURIComponent(cfg.token)}`;
+}
 async function api(params, body) {
   const sep = cfg.url.includes('?') ? '&' : '?';
   const res = body
@@ -480,6 +490,12 @@ initLaunch();
 scheduleSync(300);
 shareCfgWithSW();
 $('#notifOn').addEventListener('click', toggleNotif);
+$('#copyShortcut').addEventListener('click', async () => {
+  const link = shortcutUrl();
+  if (!link) return;
+  try { await navigator.clipboard.writeText(link); toast('Enlace copiado ✅ Pégalo en la app Atajos'); }
+  catch { prompt('Copia este enlace:', link); }
+});
 $('#quickExit').addEventListener('click', async () => {
   if (!(await leaveApp())) { $('#quick').hidden = true; toast('Android no permite salir automáticamente: usa el botón de inicio.'); }
 });
